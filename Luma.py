@@ -1195,10 +1195,15 @@ if mode == "Dashboard from existing audit":
         st.markdown("---")
         st.markdown(
             """
-            <div style='text-align:center; color:#6b7280; font-size:0.9rem; margin-top:20px;'>
-            Luma has been developed by the Translational Research Data Challenges – ARDC. 
-            The tool is provided for demonstration purposes only, to make the concept tangible. 
-            Results should be interpreted as indicative rather than authoritative.
+            <div style='background-color:#f3f4f6; padding:18px; border-radius:12px; border:1px solid #e5e7eb; margin-top:20px;'>
+                <div style='font-size:1rem; font-weight:600; margin-bottom:6px;'>
+                    ⚠️ Demonstration Tool
+                </div>
+                <div style='font-size:0.95rem; color:#374151;'>
+                    Luma has been developed by the Translational Research Data Challenges – ARDC. 
+                    The tool is provided for demonstration purposes only, to make the concept tangible. 
+                    Results should be interpreted as indicative rather than authoritative.
+                </div>
             </div>
             """,
             unsafe_allow_html=True,
