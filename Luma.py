@@ -1191,12 +1191,38 @@ if mode == "Dashboard from existing audit":
     uploaded_audit = st.sidebar.file_uploader("Upload audit workbook or CSV", type=["xlsx", "xls", "csv"])
     if uploaded_audit is None:
         st.info("Upload an existing audit workbook or CSV to explore the dashboard.")
+
+        st.markdown("---")
+        st.markdown(
+            """
+            <div style='text-align:center; color:#6b7280; font-size:0.9rem; margin-top:20px;'>
+            Luma has been developed by the Translational Research Data Challenges – ARDC. 
+            The tool is provided for demonstration purposes only, to make the concept tangible. 
+            Results should be interpreted as indicative rather than authoritative.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
         st.stop()
     audit_df = load_audit_workbook(uploaded_audit)
 else:
     uploaded_input = st.sidebar.file_uploader("Upload URL list workbook", type=["xlsx", "xls", "csv"])
     if uploaded_input is None:
         st.info("Upload the workbook containing the list of RDA URLs in the first column.")
+    
+        st.markdown("---")
+        st.markdown(
+            """
+            <div style='text-align:center; color:#6b7280; font-size:0.9rem; margin-top:20px;'>
+            Luma has been developed by the Translational Research Data Challenges – ARDC. 
+            The tool is provided for demonstration purposes only, to make the concept tangible. 
+            Results should be interpreted as indicative rather than authoritative.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    
         st.stop()
 
     if str(uploaded_input.name).lower().endswith(".csv"):
