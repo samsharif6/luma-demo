@@ -22,7 +22,7 @@ from urllib3.util.retry import Retry
 # STREAMLIT CONFIG
 # =========================================================
 st.set_page_config(
-    page_title="RDA Metadata Quality Auditor",
+    page_title="Luma: RDA Metadata Quality Auditor",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -1171,7 +1171,7 @@ def style_plot(fig):
 st.markdown(
     """
     <div class='title-wrap'>
-        <h1 style='margin-bottom:0.2rem;'>RDA Metadata Quality Auditor</h1>
+        <h1 style='margin-bottom:0.2rem;'>Luma: RDA Metadata Quality Auditor</h1>
         <div class='subtle'>Machine Readability, FAIR Proxy, Machine Actionability, and AI / CDIF Readiness</div>
     </div>
     """,
@@ -1470,3 +1470,16 @@ st.download_button(
     mime="text/csv",
 )
 
+
+st.markdown("---")
+
+st.markdown(
+    """
+    <div style='text-align:center; color:#6b7280; font-size:0.85rem; margin-top:20px;'>
+    Luma has been developed by the Translational Research Data Challenges – ARDC. 
+    The tool is provided for demonstration purposes only, to make the concept tangible. 
+    Results should be interpreted as indicative rather than authoritative.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
