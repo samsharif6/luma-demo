@@ -1187,6 +1187,15 @@ audit_df = None
 summary_df = None
 notes_df = None
 
+if "audit_df" not in st.session_state:
+    st.session_state.audit_df = None
+if "summary_df" not in st.session_state:
+    st.session_state.summary_df = None
+if "notes_df" not in st.session_state:
+    st.session_state.notes_df = None
+if "audit_mode_loaded" not in st.session_state:
+    st.session_state.audit_mode_loaded = False
+    
 if mode == "Dashboard from existing audit":
     uploaded_audit = st.sidebar.file_uploader("Upload audit workbook or CSV", type=["xlsx", "xls", "csv"])
     if uploaded_audit is None:
@@ -1211,11 +1220,12 @@ if mode == "Dashboard from existing audit":
 
         st.stop()
     audit_df = load_audit_workbook(uploaded_audit)
+
 else:
     uploaded_input = st.sidebar.file_uploader("Upload URL list workbook", type=["xlsx", "xls", "csv"])
     if uploaded_input is None:
         st.info("Upload the workbook containing the list of RDA URLs in the first column.")
-    
+
         st.markdown("---")
         st.markdown(
             """
@@ -1227,7 +1237,7 @@ else:
             """,
             unsafe_allow_html=True,
         )
-    
+
         st.stop()
 
     if str(uploaded_input.name).lower().endswith(".csv"):
@@ -1236,74 +1246,82 @@ else:
         input_df = pd.read_excel(uploaded_input)
 
     run_now = st.sidebar.button("Run audit")
-    if not run_now:
+
+    if run_now:
+        progress = st.progress(0)
+        status = st.empty()
+
+        urls = input_df.iloc[:, 0].dropna().astype(str).tolist()
+        results = []
+        total = len(urls)
+
+        for i, url in enumerate(urls, start=1):
+            status.write(f"Auditing {i} of {total}: {url}")
+            results.append(evaluate_rda_record(url, i, total))
+            progress.progress(i / total)
+
+        st.session_state.audit_df = pd.DataFrame(results)
+        st.session_state.summary_df = pd.DataFrame({
+            "Metric": [
+                "Total Records Audited",
+                "Average Machine Readable Score",
+                "Average FAIR Proxy Score",
+                "Average Machine Actionable Score",
+                "Average CDIF/AI-Ready Score",
+                "Average Composite Score",
+                "Records with JSON-LD",
+                "Records with RDFa",
+                "Records with Microdata",
+                "Records with Record Candidate",
+                "Records with DOI",
+                "Records with DOI in JSON-LD",
+                "Records with DOI in Page Metadata",
+                "Records with ORCID",
+                "Records with Distribution",
+                "Records with variableMeasured",
+                "Dataset Records",
+                "Collection Records"
+            ],
+            "Value": [
+                len(st.session_state.audit_df),
+                round(st.session_state.audit_df["Machine_Readable_Score"].mean(), 2),
+                round(st.session_state.audit_df["FAIR_Proxy_Score"].mean(), 2),
+                round(st.session_state.audit_df["Machine_Actionable_Score"].mean(), 2),
+                round(st.session_state.audit_df["CDIF_AI_Ready_Score"].mean(), 2),
+                round(st.session_state.audit_df["Total_Composite_Score"].mean(), 2),
+                int((st.session_state.audit_df["JSONLD_Found"] == "Yes").sum()),
+                int((st.session_state.audit_df["RDFa_Present"] == "Yes").sum()),
+                int((st.session_state.audit_df["Microdata_Present"] == "Yes").sum()),
+                int((st.session_state.audit_df["Dataset_Candidate_Found"] == "Yes").sum()),
+                int((st.session_state.audit_df["Has_DOI"] == "Yes").sum()),
+                int((st.session_state.audit_df["Has_DOI_JSONLD"] == "Yes").sum()),
+                int((st.session_state.audit_df["Has_DOI_Page_Metadata"] == "Yes").sum()),
+                int((st.session_state.audit_df["Has_ORCID"] == "Yes").sum()),
+                int((st.session_state.audit_df["Distribution_Count"] > 0).sum()),
+                int((st.session_state.audit_df["Variable_Count"] > 0).sum()),
+                int((st.session_state.audit_df["Record_Type"] == "Dataset").sum()),
+                int((st.session_state.audit_df["Record_Type"] == "Collection").sum()),
+            ]
+        })
+        st.session_state.notes_df = pd.DataFrame(NOTES_DATA)
+        st.session_state.audit_mode_loaded = True
+
+    if st.session_state.audit_mode_loaded and st.session_state.audit_df is not None:
+        audit_df = st.session_state.audit_df
+        summary_df = st.session_state.summary_df
+        notes_df = st.session_state.notes_df
+
+        excel_bytes = workbook_bytes(summary_df, audit_df, notes_df)
+        st.download_button(
+            label="Download audit workbook",
+            data=excel_bytes,
+            file_name="RDA_Metadata_Audit_Gold.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    else:
+        st.info("Upload the workbook and click 'Run audit' to generate results.")
         st.stop()
-
-    progress = st.progress(0)
-    status = st.empty()
-
-    urls = input_df.iloc[:, 0].dropna().astype(str).tolist()
-    results = []
-    total = len(urls)
-    for i, url in enumerate(urls, start=1):
-        status.write(f"Auditing {i} of {total}: {url}")
-        results.append(evaluate_rda_record(url, i, total))
-        progress.progress(i / total)
-
-    audit_df = pd.DataFrame(results)
-    summary_df, _, notes_df = run_master_audit_from_df(input_df)
-    summary_df = pd.DataFrame({
-        "Metric": [
-            "Total Records Audited",
-            "Average Machine Readable Score",
-            "Average FAIR Proxy Score",
-            "Average Machine Actionable Score",
-            "Average CDIF/AI-Ready Score",
-            "Average Composite Score",
-            "Records with JSON-LD",
-            "Records with RDFa",
-            "Records with Microdata",
-            "Records with Record Candidate",
-            "Records with DOI",
-            "Records with DOI in JSON-LD",
-            "Records with DOI in Page Metadata",
-            "Records with ORCID",
-            "Records with Distribution",
-            "Records with variableMeasured",
-            "Dataset Records",
-            "Collection Records"
-        ],
-        "Value": [
-            len(audit_df),
-            round(audit_df["Machine_Readable_Score"].mean(), 2),
-            round(audit_df["FAIR_Proxy_Score"].mean(), 2),
-            round(audit_df["Machine_Actionable_Score"].mean(), 2),
-            round(audit_df["CDIF_AI_Ready_Score"].mean(), 2),
-            round(audit_df["Total_Composite_Score"].mean(), 2),
-            int((audit_df["JSONLD_Found"] == "Yes").sum()),
-            int((audit_df["RDFa_Present"] == "Yes").sum()),
-            int((audit_df["Microdata_Present"] == "Yes").sum()),
-            int((audit_df["Dataset_Candidate_Found"] == "Yes").sum()),
-            int((audit_df["Has_DOI"] == "Yes").sum()),
-            int((audit_df["Has_DOI_JSONLD"] == "Yes").sum()),
-            int((audit_df["Has_DOI_Page_Metadata"] == "Yes").sum()),
-            int((audit_df["Has_ORCID"] == "Yes").sum()),
-            int((audit_df["Distribution_Count"] > 0).sum()),
-            int((audit_df["Variable_Count"] > 0).sum()),
-            int((audit_df["Record_Type"] == "Dataset").sum()),
-            int((audit_df["Record_Type"] == "Collection").sum()),
-        ]
-    })
-    notes_df = pd.DataFrame(NOTES_DATA)
-
-    excel_bytes = workbook_bytes(summary_df, audit_df, notes_df)
-    st.download_button(
-        label="Download audit workbook",
-        data=excel_bytes,
-        file_name="RDA_Metadata_Audit_Gold.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-
+        
 # =========================================================
 # DASHBOARD
 # =========================================================
